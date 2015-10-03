@@ -4,72 +4,61 @@ using UnityEngine.UI;
 using UnityEngine.EventSystems;
 
 public class Chapter01 : MonoBehaviour {
+    private GameObject capsule;
+    private float targetAngle = 0f;
+    public float capsuleRotationSpeed = 4f;
+    private GameObject sphere;
+    private float buttonDownTime;
+    public float sphereMagnitudeX = 2.0f;
+    public float sphereMagnitudeY = 3.0f;
+    public float sphereFrequency = 1.0f;
 
-	private GameObject capsule;
+    void Start() {
+        capsule = GameObject.Find("Capsule");
+    }
 
-	private float targetAngle = 0f;
-	public float capsuleRotationSpeed = 4f;
+    void Update() {
+        if (Input.GetMouseButtonDown(0) && !EventSystem.current.IsPointerOverGameObject()) {
+            Debug.Log(string.Format("mousePosition ({0:f}, {1:f})", Input.mousePosition.x, Input.mousePosition.y));
 
-	private GameObject sphere;
-	private float buttonDownTime;
+            targetAngle = GetRotationAngleByTargetPosition(Input.mousePosition);
 
-	public float sphereMagnitudeX = 2.0f;
-	public float sphereMagnitudeY = 3.0f;
-	public float sphereFrequency = 1.0f;
+            if (sphere != null) {
+                Destroy(sphere);
+                sphere = null;
+            }
 
-	// Use this for initialization
-	void Start () {
-		capsule = GameObject.Find("Capsule");
-	}
+            sphere = SpawnSphereAt(Input.mousePosition);
+            buttonDownTime = Time.time;
+        }
+        capsule.transform.eulerAngles = new Vector3(0, 0, Mathf.LerpAngle(capsule.transform.eulerAngles.z, targetAngle, Time.deltaTime * capsuleRotationSpeed));
 
-	// Update is called once per frame
-	void Update () {
-		if (Input.GetMouseButtonDown(0) && !EventSystem.current.IsPointerOverGameObject()) {
-			Debug.Log (string.Format("mousePosition ({0:f}, {1:f})", Input.mousePosition.x, Input.mousePosition.y));
+        if (sphere != null) {
+            sphere.transform.position = new Vector3(sphere.transform.position.x + (capsule.transform.position.x - sphere.transform.position.x) * Time.deltaTime * sphereMagnitudeX,
+                Mathf.Abs(Mathf.Sin((Time.time - buttonDownTime) * (Mathf.PI * 2) * sphereFrequency) * sphereMagnitudeY),
+                0
+            );
+        }
+    }
 
-			targetAngle = GetRotationAngleByTargetPosition(Input.mousePosition);
+    float GetRotationAngleByTargetPosition(Vector3 mousePosition) {
+        Vector3 selfScreenPoint = Camera.main.WorldToScreenPoint(capsule.transform.position);
+        Vector3 diff = mousePosition - selfScreenPoint;
+        float angle = Mathf.Atan2(diff.y, diff.x) * Mathf.Rad2Deg;
 
-			if (sphere != null) {
-				Destroy(sphere);
-				sphere = null;
-			}
+        Debug.Log(string.Format("angle: {0:f}", angle));
 
-			sphere = SpawnSphereAt(Input.mousePosition);
-			buttonDownTime = Time.time;
-		}
+        float finalAngle = angle - 90f;
 
-		capsule.transform.eulerAngles
-			= new Vector3(0, 0, Mathf.LerpAngle(capsule.transform.eulerAngles.z, targetAngle, Time.deltaTime * capsuleRotationSpeed));
+        Debug.Log(string.Format("finalAngle: {0:f}", finalAngle));
 
-		if (sphere != null) {
-			sphere.transform.position = new Vector3(sphere.transform.position.x + (capsule.transform.position.x - sphere.transform.position.x) * Time.deltaTime * sphereMagnitudeX,
-				Mathf.Abs(Mathf.Sin ((Time.time - buttonDownTime) * (Mathf.PI * 2) * sphereFrequency) * sphereMagnitudeY),
-			    0
-			);
-		}
-	}
+        return finalAngle;
+    }
 
-	float GetRotationAngleByTargetPosition(Vector3 mousePosition) {
-		Vector3 selfScreenPoint = Camera.main.WorldToScreenPoint(capsule.transform.position);
-		Vector3 diff = mousePosition - selfScreenPoint;
-		
-		float angle = Mathf.Atan2(diff.y, diff.x) * Mathf.Rad2Deg;
-
-		Debug.Log (string.Format("angle: {0:f}", angle));
-
-		float finalAngle = angle - 90f;
-
-		Debug.Log (string.Format("finalAngle: {0:f}", finalAngle));
-
-		return finalAngle;
-	}
-
-	GameObject SpawnSphereAt(Vector3 mousePosition) {
-		GameObject sp = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-		Vector3 selfScreenPoint = Camera.main.WorldToScreenPoint(capsule.transform.position);
-		Vector3 position = Camera.main.ScreenToWorldPoint(new Vector3(mousePosition.x, mousePosition.y, selfScreenPoint.z));
-		sp.transform.position = new Vector3(position.x, position.y, 0);
-		return sp;
-	}
+    GameObject SpawnSphereAt(Vector3 mousePosition) {
+        GameObject sp = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        sp.transform.position = Camera.main.ScreenToWorldPoint(new Vector3(mousePosition.x, mousePosition.y, 0));
+        return sp;
+    }
 }
 
